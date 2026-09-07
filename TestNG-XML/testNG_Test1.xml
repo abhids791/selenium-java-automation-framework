@@ -1,0 +1,8 @@
+<suite name="Test Suite">
+    <test name="aimsGreen.qa.test.BookFlightTwoWay">
+        <classes>
+            <class name="aimsGreen.qa.test.BookFlightTwoWay"/>
+            <class name="aimsGreen.qa.test.BookFlightOneWay"/>
+        </classes>
+    </test>
+</suite>
