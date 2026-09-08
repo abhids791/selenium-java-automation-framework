@@ -1,8 +1,8 @@
 <suite name="Test Suite">
-    <test name="aimsGreen.qa.test.BookFlightTwoWay">
+    <test name="aimsGreen.qa.test.ErrorValidation">
         <classes>
-            <class name="aimsGreen.qa.test.BookFlightTwoWay"/>
-            <class name="aimsGreen.qa.test.BookFlightOneWay"/>
+            <class name="aimsGreen.qa.test.ErrorValidation"/>
+            <class name="aimsGreen.qa.test.BookFlight"/>
         </classes>
     </test>
 </suite>
