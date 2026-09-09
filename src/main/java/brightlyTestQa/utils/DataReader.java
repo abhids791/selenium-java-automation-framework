@@ -1,4 +1,4 @@
-package brightlyQa.utils;
+package brightlyTestQa.utils;
 
 import org.apache.commons.io.FileUtils;
 import tools.jackson.core.type.TypeReference;

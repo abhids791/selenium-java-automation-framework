@@ -1,28 +1,26 @@
-package aimsGreen.qa.test;
+package brightlyTestQa.test;
 
+import brightlyTestQa.pagesObjects.*;
+import brightlyTestQa.testComponents.BaseTest;
+import brightlyTestQa.testComponents.RetryWhenTestFailed;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import brightlyQa.pagesObjects.ConfirmBookingPage;
-import brightlyQa.pagesObjects.FlightListPage;
-import brightlyQa.pagesObjects.PassengersDetailsPage;
-import brightlyQa.pagesObjects.PaymentPage;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-public class BookFlight extends BaseTest {
+public class BookFlightTest extends BaseTest {
+
     @DataProvider
     public Object[][] sourceDestinationData() throws IOException {
-        List<HashMap<String, String>> data = getJsonDatgaToMap("src/main/resources/dataSet/toFromAddress.json");
+        List<HashMap<String, String>> data = getJsonDatgaToMap("src/test/java/brightlyTestQa/data/toFromAddress.json");
         return new Object[][] {{data.get(0)}, {data.get(1)}, {data.get(2)}};
     }
 
 
-
-
-    @Test(dataProvider = "sourceDestinationData", retryAnalyzer = RetryWhenTestFailed.class)
+    @Test(dataProvider = "sourceDestinationData", retryAnalyzer = RetryWhenTestFailed.class, groups={"Regression", "Smoke"})
     public void bookFlightOneWay(HashMap<String, String> data) throws InterruptedException, IOException {
 
         //Enter Search Details
@@ -58,7 +56,7 @@ public class BookFlight extends BaseTest {
 
     }
 
-    @Test(retryAnalyzer = RetryWhenTestFailed.class)
+    @Test(retryAnalyzer = RetryWhenTestFailed.class, groups={"Regression","Smoke"})
     public void bookFlightTwoWay() throws InterruptedException, IOException {
 
         //Enter Search Details

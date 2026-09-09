@@ -1,6 +1,6 @@
-package aimsGreen.qa.test;
+package brightlyTestQa.testComponents;
 
-import brightlyQa.pagesObjects.LandingPage;
+import brightlyTestQa.pagesObjects.LandingPage;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
@@ -23,7 +23,7 @@ import java.util.Properties;
 
 public class BaseTest {
     protected WebDriver driver;
-    LandingPage landingPage;
+    protected LandingPage landingPage;
 
     @BeforeMethod(alwaysRun = true)
     public LandingPage launchApplication() throws IOException {

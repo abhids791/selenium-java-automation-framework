@@ -1,14 +1,17 @@
-package aimsGreen.qa.test;
+package brightlyTestQa.test;
 
 
+import brightlyTestQa.pagesObjects.LandingPage;
+import brightlyTestQa.testComponents.BaseTest;
+import brightlyTestQa.testComponents.RetryWhenTestFailed;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class ErrorValidation extends BaseTest {
+public class ErrorValidationTest extends BaseTest {
 
-    @Test(retryAnalyzer = RetryWhenTestFailed.class)
+    @Test(groups = "Regression", retryAnalyzer = RetryWhenTestFailed.class)
     public void testErrorValidationForToField() {
         // Add your test logic here
         landingPage.selectValueInFromDropDown("Tokyo");
@@ -20,7 +23,7 @@ public class ErrorValidation extends BaseTest {
 
     }
 
-    @Test(groups = "smoke", retryAnalyzer = RetryWhenTestFailed.class)
+    @Test(groups = "Regression", retryAnalyzer = RetryWhenTestFailed.class)
     public void testErrorValidationForFromField() {
         // Add your test logic here
         landingPage.selectValueInToDropDown("Tokyo");
