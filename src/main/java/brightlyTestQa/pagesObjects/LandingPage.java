@@ -1,4 +1,4 @@
-package brightlyQa.pagesObjects;
+package brightlyTestQa.pagesObjects;
 
 
 import org.openqa.selenium.WebDriver;
@@ -42,6 +42,9 @@ public class LandingPage extends BasePage {
     List<WebElement> toFieldErrorMessage;
 
     @FindBy(css ="div[class='invalid-feedback']")
+    List<WebElement> DepartureDateFieldErrorMessage;
+
+    @FindBy(css ="div[class='invalid-feedback']")
     List<WebElement> fromFieldErrorMessage;
 
 
@@ -83,8 +86,11 @@ public class LandingPage extends BasePage {
     }
 
     public String getFromFieldErrorMessage(){
-        System.out.println(fromFieldErrorMessage.get(0).getText());
         return fromFieldErrorMessage.get(0).getText();
+    }
+
+    public String getDepartureDateFieldErrorMessage(){
+        return DepartureDateFieldErrorMessage.get(2).getText();
     }
 
 }

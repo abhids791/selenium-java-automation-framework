@@ -1,5 +1,6 @@
-package brightlyQa.pagesObjects;
+package brightlyTestQa.pagesObjects;
 
+import brightlyTestQa.AbstractComponents.AbstractComponent;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -11,13 +12,14 @@ import org.testng.asserts.SoftAssert;
 
 import java.time.Duration;
 
-public class BasePage {
+public class BasePage extends AbstractComponent {
     SoftAssert softAssert= new SoftAssert();
     WebDriver driver;
     WebDriverWait wait;
     Actions actions;
 
     public BasePage(WebDriver driver){
+        super(driver);
         this.driver = driver;
         this.actions = new Actions(driver);
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -41,14 +43,7 @@ public class BasePage {
     }
 
     public void scrollUpAndClick(WebElement element, int yaxis) {
-
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        actions.scrollToElement(element)
-                .scrollByAmount(0, yaxis)
-                .perform();
-
-        wait.until(ExpectedConditions.elementToBeClickable(element));
-
+        waitForElementToAppearAndScrollTo(element, yaxis);
         element.click();
     }
 }
