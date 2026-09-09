@@ -1,7 +1,5 @@
 package brightlyTestQa.test;
 
-
-import brightlyTestQa.pagesObjects.LandingPage;
 import brightlyTestQa.testComponents.BaseTest;
 import brightlyTestQa.testComponents.RetryWhenTestFailed;
 import org.testng.Assert;
@@ -19,11 +17,10 @@ public class ErrorValidationTest extends BaseTest {
         landingPage.enterValueInPassengersInputField("2");
         landingPage.clickOnOneWay();
         landingPage.clickOnSearchFlightButton();
-        Assert.assertEquals(landingPage.getToFieldErrorMessage(), "Please select a destination city");
-
+        Assert.assertEquals(landingPage.getToFieldErrorMessage(), "Please select a destination city.");
     }
 
-    @Test(groups = "Regression", retryAnalyzer = RetryWhenTestFailed.class)
+    @Test(groups = {"Regression", "Smoke"}, retryAnalyzer = RetryWhenTestFailed.class)
     public void testErrorValidationForFromField() {
         // Add your test logic here
         landingPage.selectValueInToDropDown("Tokyo");
@@ -32,8 +29,17 @@ public class ErrorValidationTest extends BaseTest {
         landingPage.clickOnOneWay();
         landingPage.clickOnSearchFlightButton();
         Assert.assertEquals(landingPage.getFromFieldErrorMessage(), "Please select a departure city.");
-
     }
 
+    @Test(groups = {"Regression", "Smoke"}, retryAnalyzer = RetryWhenTestFailed.class)
+    public void testErrorValidationForDepartureDateField() {
+        // Add your test logic here
+        landingPage.selectValueInFromDropDown("Tokyo");
+        landingPage.selectValueInToDropDown("Delhi");
 
+        landingPage.enterValueInPassengersInputField("2");
+        landingPage.clickOnOneWay();
+        landingPage.clickOnSearchFlightButton();
+        Assert.assertEquals(landingPage.getDepartureDateFieldErrorMessage(), "Please select a departure date.");
+    }
 }

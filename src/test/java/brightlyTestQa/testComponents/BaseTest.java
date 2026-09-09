@@ -14,6 +14,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
@@ -40,14 +41,23 @@ public class BaseTest {
         }
     }
     public WebDriver initializeDriver() throws IOException {
-        Properties prop= new Properties();
-        try (InputStream inputStream = BaseTest.class.getClassLoader().getResourceAsStream("config.properties")) {
-            if (inputStream == null) {
-                throw new IOException("config.properties not found on the classpath");
-            }
-            prop.load(inputStream);
+        Properties fileProperties= new Properties();
+
+        try(FileInputStream fis= new FileInputStream(System.getProperty("user.dir") + "/src/main/resources/config.properties");) {
+            fileProperties.load(fis);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new IOException("Failed to load config.properties file", e);
         }
-        String browserName= prop.getProperty("browser");
+
+        String browserName;
+        if(System.getProperty("browser")==null || System.getProperty("browser").isEmpty()){
+            browserName= fileProperties.getProperty("browser");
+        }
+        else{
+            browserName= System.getProperty("browser");
+
+        }
 
         if(browserName.equalsIgnoreCase("chrome")){
             driver = new ChromeDriver();
