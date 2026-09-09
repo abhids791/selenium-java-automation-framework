@@ -41,5 +41,6 @@ public class ErrorValidationTest extends BaseTest {
         landingPage.clickOnOneWay();
         landingPage.clickOnSearchFlightButton();
         Assert.assertEquals(landingPage.getDepartureDateFieldErrorMessage(), "Please select a departure date");
+
     }
 }
