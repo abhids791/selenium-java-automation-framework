@@ -6,8 +6,11 @@ import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import tools.jackson.core.type.TypeReference;
@@ -59,12 +62,37 @@ public class BaseTest {
 
         }
 
+        boolean headless = Boolean.parseBoolean(System.getProperty("headless", "false"));
+
         if(browserName.equalsIgnoreCase("chrome")){
-            driver = new ChromeDriver();
-        } else if (browserName.equalsIgnoreCase("FireFox")) {
-            driver = new FirefoxDriver();
-        }else if (browserName.equalsIgnoreCase("Edge")) {
-            driver = new EdgeDriver();
+            ChromeOptions options = new ChromeOptions();
+            if (headless) {
+                options.addArguments("--headless=new");
+                options.addArguments("--window-size=1920,1080");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+            }
+            driver = new ChromeDriver(options);
+        }
+        else if (browserName.equalsIgnoreCase("firefox")) {
+            FirefoxOptions options = new FirefoxOptions();
+            if(headless){
+                options.addArguments("--headless=new");
+                options.addArguments("--window-size=1920,1080");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+            }
+            driver = new FirefoxDriver(options);
+        }
+        else if (browserName.equalsIgnoreCase("edge")) {
+            EdgeOptions options = new EdgeOptions();
+            if(headless){
+                options.addArguments("--headless=new");
+                options.addArguments("--window-size=1920,1080");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+            }
+            driver = new EdgeDriver(options);
         }
         driver.manage().window().maximize();
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
