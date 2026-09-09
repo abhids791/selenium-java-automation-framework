@@ -2,17 +2,29 @@ package aimsGreen.qa.test;
 
 import AimsGreen.QA.pages.*;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 
 public class BookFlight extends BaseTest {
+    @DataProvider
+    public Object[][] sourceDestinationData() throws IOException {
+        List<HashMap<String, String>> data = getJsonDatgaToMap("src/main/resources/dataSet/toFromAddress.json");
+        return new Object[][] {{data.get(0)}, {data.get(1)}, {data.get(2)}};
+    }
 
-    @Test
-    public void bookFlightOneWay() throws InterruptedException, IOException {
+
+
+
+    @Test(dataProvider = "sourceDestinationData")
+    public void bookFlightOneWay(HashMap<String, String> data) throws InterruptedException, IOException {
 
         //Enter Search Details
-        landingPage.selectValueInFromDropDown("Tokyo");
-        landingPage.selectValueInToDropDown("Mumbai");
+        landingPage.selectValueInFromDropDown(data.get("from"));
+        landingPage.selectValueInToDropDown(data.get("to"));
         landingPage.selectValueFromDepartureDate("09-09-2026");
         landingPage.enterValueInPassengersInputField("2");
         landingPage.clickOnOneWay();
@@ -44,7 +56,7 @@ public class BookFlight extends BaseTest {
     }
 
     @Test
-    public void Method1() throws InterruptedException, IOException {
+    public void bookFlightTwoWay() throws InterruptedException, IOException {
 
         //Enter Search Details
         landingPage.selectValueInFromDropDown("Tokyo");
