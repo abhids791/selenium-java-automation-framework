@@ -1,9 +1,12 @@
 package aimsGreen.qa.test;
 
-import AimsGreen.QA.pages.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import brightlyQa.pagesObjects.ConfirmBookingPage;
+import brightlyQa.pagesObjects.FlightListPage;
+import brightlyQa.pagesObjects.PassengersDetailsPage;
+import brightlyQa.pagesObjects.PaymentPage;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -19,7 +22,7 @@ public class BookFlight extends BaseTest {
 
 
 
-    @Test(dataProvider = "sourceDestinationData")
+    @Test(dataProvider = "sourceDestinationData", retryAnalyzer = RetryWhenTestFailed.class)
     public void bookFlightOneWay(HashMap<String, String> data) throws InterruptedException, IOException {
 
         //Enter Search Details
@@ -55,7 +58,7 @@ public class BookFlight extends BaseTest {
 
     }
 
-    @Test
+    @Test(retryAnalyzer = RetryWhenTestFailed.class)
     public void bookFlightTwoWay() throws InterruptedException, IOException {
 
         //Enter Search Details

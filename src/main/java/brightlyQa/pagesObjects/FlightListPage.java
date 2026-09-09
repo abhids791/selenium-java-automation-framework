@@ -1,4 +1,4 @@
-package AimsGreen.QA.pages;
+package brightlyQa.pagesObjects;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;

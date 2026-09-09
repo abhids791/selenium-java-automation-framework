@@ -1,6 +1,6 @@
 package aimsGreen.qa.test;
 
-import AimsGreen.QA.utils.util;
+import brightlyQa.utils.util;
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import org.openqa.selenium.WebDriver;

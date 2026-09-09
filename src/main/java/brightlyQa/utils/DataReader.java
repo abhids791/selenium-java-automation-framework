@@ -1,4 +1,4 @@
-package AimsGreen.QA.utils;
+package brightlyQa.utils;
 
 import org.apache.commons.io.FileUtils;
 import tools.jackson.core.type.TypeReference;
@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class DataReader {
 
