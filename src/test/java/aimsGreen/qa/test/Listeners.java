@@ -7,6 +7,7 @@ import org.openqa.selenium.WebDriver;
 import org.testng.ITestListener;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 public class Listeners extends BaseTest implements ITestListener {
 
@@ -28,25 +29,34 @@ public class Listeners extends BaseTest implements ITestListener {
 
     @Override
     public void onTestFailure(org.testng.ITestResult result) {
-        // Code to execute when a test fails
         test.fail(result.getThrowable());
+
         WebDriver driver = null;
-        String filePath =null;
+
+        Object instance = result.getInstance();
+
         try {
-            driver =(WebDriver) result.getTestClass().getRealClass().getField(("driver")).get(result.getInstance());
-            System.out.println("Driver in Listener: "+driver);
+            if (instance instanceof BaseTest) {
+                Field field = BaseTest.class.getDeclaredField("driver");
+                field.setAccessible(true);
+                driver = (WebDriver) field.get(instance);
+            } else {
+                Field field = result.getTestClass().getRealClass().getDeclaredField("driver");
+                field.setAccessible(true);
+                driver = (WebDriver) field.get(instance);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-
-        try {
-            filePath= takeScreenShot(result.getMethod().getMethodName(), driver);
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (driver != null) {
+            try {
+                String filePath = takeScreenShot(result.getMethod().getMethodName(), driver);
+                test.addScreenCaptureFromPath(filePath, result.getMethod().getMethodName());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
-        test.addScreenCaptureFromPath(filePath, result.getMethod().getMethodName());
 
     }
 
