@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Test Suite" thread-count="5">
+    <listeners>
+        <listener class-name="aimsGreen.qa.test.Listeners"/>
+    </listeners>
+
+    <test name="ErrorValidation">
+        <classes>
+            <class name="aimsGreen.qa.test.ErrorValidation"/>
+        </classes>
+    </test>
+
+    <test name="BookFlight">
+        <classes>
+            <class name="aimsGreen.qa.test.BookFlight"/>
+        </classes>
+    </test>
+</suite>

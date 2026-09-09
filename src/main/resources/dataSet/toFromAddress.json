@@ -1,0 +1,14 @@
+[
+  {
+    "from": "London",
+    "to": "Tokyo"
+  },
+  {
+    "from": "Paris",
+    "to": "Sydney"
+  },
+  {
+    "from": "Delhi",
+    "to": "Mumbai"
+  }
+]

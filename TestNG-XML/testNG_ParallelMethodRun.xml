@@ -1,0 +1,12 @@
+<suite parallel = "methods" name="Test Suite">
+    <test  thread-count="5" name="ErrorValidation">
+        <classes>
+            <class name="aimsGreen.qa.test.ErrorValidation"/>
+        </classes>
+    </test>
+    <test thread-count="5" name="BookFlight">
+        <classes>
+            <class name="aimsGreen.qa.test.BookFlight"/>
+        </classes>
+    </test>
+</suite>

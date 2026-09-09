@@ -42,6 +42,10 @@ public class LandingPage extends BasePage {
     @FindBy(css ="div[class='invalid-feedback']")
     List<WebElement> toFieldErrorMessage;
 
+    @FindBy(css ="div[class='invalid-feedback']")
+    List<WebElement> fromFieldErrorMessage;
+
+
 
     public void selectValueInFromDropDown(String from){
         selectOptionFromDropdown(driver, fromDropDown, from);
@@ -77,6 +81,11 @@ public class LandingPage extends BasePage {
 
     public String getToFieldErrorMessage(){
         return toFieldErrorMessage.get(1).getText();
+    }
+
+    public String getFromFieldErrorMessage(){
+        System.out.println(fromFieldErrorMessage.get(0).getText());
+        return fromFieldErrorMessage.get(0).getText();
     }
 
 }

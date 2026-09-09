@@ -1,30 +1,38 @@
 package aimsGreen.qa.test;
 
 import AimsGreen.QA.pages.LandingPage;
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
 public class BaseTest {
     WebDriver driver;
     LandingPage landingPage;
 
-    @BeforeMethod
+    @BeforeMethod(alwaysRun = true)
     public LandingPage launchApplication() throws IOException {
         driver=initializeDriver();
         landingPage= new LandingPage(driver);
         landingPage.goToLandingPage();
         return landingPage;
     }
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void tearDown() {
         if (driver != null) {
             driver.quit();
@@ -47,4 +55,23 @@ public class BaseTest {
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
         return driver;
     }
+
+    public List<HashMap<String, String>> getJsonDatgaToMap(String path) throws IOException {
+        String jsonContent = FileUtils.readFileToString(new File(path), "UTF-8");
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<HashMap<String, String>> dataMap = objectMapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {
+
+        });
+
+        return dataMap;
+    }
+
+    public String takeScreenShot(String testCaseName, WebDriver driver) throws IOException {
+        TakesScreenshot ts= ((TakesScreenshot)driver);
+        File src=ts.getScreenshotAs(OutputType.FILE);
+        FileUtils.copyFile(src,new File("src/main/resources/screenShots/"+testCaseName+"screenshot.png"));
+        return System.getProperty("user.dir")+"\\src\\main\\resources\\screenShots\\"+testCaseName+"screenshot.png";
+    }
+
+
 }
