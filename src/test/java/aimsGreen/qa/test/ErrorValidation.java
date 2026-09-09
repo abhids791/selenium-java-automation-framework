@@ -8,7 +8,7 @@ import org.testng.annotations.Test;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class ErrorValidation extends BaseTest {
 
-    @Test
+    @Test(retryAnalyzer = RetryWhenTestFailed.class)
     public void testErrorValidationForToField() {
         // Add your test logic here
         landingPage.selectValueInFromDropDown("Tokyo");
@@ -20,7 +20,7 @@ public class ErrorValidation extends BaseTest {
 
     }
 
-    @Test(groups = "smoke")
+    @Test(groups = "smoke", retryAnalyzer = RetryWhenTestFailed.class)
     public void testErrorValidationForFromField() {
         // Add your test logic here
         landingPage.selectValueInToDropDown("Tokyo");
