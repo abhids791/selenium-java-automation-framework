@@ -118,7 +118,11 @@ public class BaseTest {
         }
         String fileName = testCaseName + "_"  + ".png";
         FileUtils.copyFile(src, new File(screenshotDir, fileName));
-        return System.getProperty("user.dir") + "\\src\\main\\resources\\screenShots\\" + fileName;
+        File destination = new File(screenshotDir, fileName);
+
+        FileUtils.copyFile(src, destination);
+
+        return destination.getAbsolutePath();
     }
 
 
