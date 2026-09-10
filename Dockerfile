@@ -1,4 +1,5 @@
 FROM maven:3.9.9-eclipse-temurin-17
+
 USER root
 
 RUN apt-get update && \
@@ -13,9 +14,12 @@ RUN apt-get update && \
 
 WORKDIR /app
 
+ENV HOME=/tmp
+ENV MAVEN_CONFIG=/tmp/.m2
+
 COPY pom.xml .
 
-RUN mvn dependency:go-offline
+RUN mvn -P Smoke dependency:go-offline
 
 COPY . .
 
