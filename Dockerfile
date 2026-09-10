@@ -23,4 +23,6 @@ RUN mvn -P Smoke dependency:go-offline
 
 COPY . .
 
+RUN chgrp -R 0 /app && chmod -R g=u /app
+
 CMD ["mvn", "clean", "test", "-P", "Smoke", "-Dbrowser=chrome", "-Dheadless=true"]
