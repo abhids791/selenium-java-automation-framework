@@ -4,9 +4,9 @@
     <listeners>
         <listener class-name="brightlyTestQa.testComponents.Listeners"/>
     </listeners>
-    <test name="BookFlightTest">
+    <test name="BookFlightTwoWay">
         <classes>
-            <class name="brightlyTestQa.test.BookFlightTest"/>
+            <class name="brightlyTestQa.test.BookFlightTwoWay"/>
         </classes>
     </test>
 </suite>
