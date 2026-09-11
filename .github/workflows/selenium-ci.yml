@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+
   workflow_dispatch:
     inputs:
       suite:
@@ -26,8 +27,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      # -------------------------------
+      # Checkout
+      # -------------------------------
+
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # -------------------------------
+      # Java / Maven
+      # -------------------------------
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -40,6 +50,10 @@ jobs:
         run: |
           java -version
           mvn -version
+
+      # -------------------------------
+      # Run Selenium tests in GitHub
+      # -------------------------------
 
       - name: Run TestNG suite
         run: mvn clean test -P ${{ github.event.inputs.suite || 'Smoke' }} -Dbrowser=chrome -Dheadless=true
@@ -65,6 +79,44 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
+      # -------------------------------
+      # OpenShift
+      # -------------------------------
+
+      - name: Install OpenShift CLI
+        if: github.event_name != 'pull_request'
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+          tar -xzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/oc
+          oc version --client
+
+      - name: Login to OpenShift
+        if: github.event_name != 'pull_request'
+        run: |
+          oc login "${{ vars.OPENSHIFT_SERVER }}" \
+            --token="${{ secrets.OPENSHIFT_TOKEN }}"
+          oc project "${{ vars.OPENSHIFT_NAMESPACE }}"
+
+      - name: Create Selenium Job in OpenShift
+        if: github.event_name != 'pull_request'
+        run: |
+          oc create job selenium-smoke-${{ github.run_id }} \
+            --image=ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
+      - name: Wait for OpenShift Selenium Job
+        if: github.event_name != 'pull_request'
+        run: |
+          oc wait \
+            --for=condition=complete \
+            job/selenium-smoke-${{ github.run_id }} \
+            --timeout=10m
+
+      - name: Show OpenShift Selenium logs
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          oc logs job/selenium-smoke-${{ github.run_id }} || true
 
       # -------------------------------
       # Test artifacts
