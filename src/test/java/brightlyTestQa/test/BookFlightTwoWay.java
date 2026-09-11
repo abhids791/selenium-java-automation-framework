@@ -16,8 +16,8 @@ public class BookFlightTwoWay extends BaseTest {
     public void bookFlightTwoWay() throws InterruptedException, IOException {
 
         //Enter Search Details
-        landingPage.selectValueInFromDropDown("Tokyo");
-        landingPage.selectValueInToDropDown("Mumbai");
+        landingPage.selectValueInFromDropDown("Paris");
+        landingPage.selectValueInToDropDown("Delhi");
         landingPage.selectValueFromDepartureDate("09-09-2026");
         landingPage.selectValueFromReturnDate("16-09-2026");
         landingPage.enterValueInPassengersInputField("2");
