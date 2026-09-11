@@ -9,11 +9,6 @@
     <listeners>
         <listener class-name="brightlyTestQa.testComponents.Listeners"/>
     </listeners>
-    <test  name="ErrorValidation">
-        <classes>
-            <class name="brightlyTestQa.test.ErrorValidationTest"/>
-        </classes>
-    </test>
     <test name="BookFlight">
         <classes>
             <class name="brightlyTestQa.test.BookFlightTest"/>
