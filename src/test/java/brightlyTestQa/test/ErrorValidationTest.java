@@ -20,7 +20,7 @@ public class ErrorValidationTest extends BaseTest {
         Assert.assertEquals(landingPage.getToFieldErrorMessage(), "Please select a destination city.");
     }
 
-    @Test(groups = {"Regression", "Smoke"}, retryAnalyzer = RetryWhenTestFailed.class)
+    @Test(groups = {"Regression"}, retryAnalyzer = RetryWhenTestFailed.class)
     public void testErrorValidationForFromField() {
         // Add your test logic here
         landingPage.selectValueInToDropDown("Tokyo");
@@ -28,10 +28,10 @@ public class ErrorValidationTest extends BaseTest {
         landingPage.enterValueInPassengersInputField("2");
         landingPage.clickOnOneWay();
         landingPage.clickOnSearchFlightButton();
-        Assert.assertEquals(landingPage.getFromFieldErrorMessage(), "Please select a departure city." );
+        Assert.assertEquals(landingPage.getFromFieldErrorMessage(), "Please select a departure city.");
     }
 
-    @Test(groups = {"Regression", "Smoke"}, retryAnalyzer = RetryWhenTestFailed.class)
+    @Test(groups = {"Regression"}, retryAnalyzer = RetryWhenTestFailed.class)
     public void testErrorValidationForDepartureDateField() {
         // Add your test logic here
         landingPage.selectValueInFromDropDown("Tokyo");

@@ -20,7 +20,7 @@ public class BookFlightTest extends BaseTest {
     }
 
 
-    @Test(dataProvider = "sourceDestinationData", retryAnalyzer = RetryWhenTestFailed.class, groups={"Regression", "Smoke"})
+    @Test(dataProvider = "sourceDestinationData", retryAnalyzer = RetryWhenTestFailed.class, groups={"Regression"})
     public void bookFlightOneWay(HashMap<String, String> data) throws InterruptedException, IOException {
 
         //Enter Search Details
