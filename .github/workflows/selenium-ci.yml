@@ -5,15 +5,14 @@ permissions:
   packages: write
 
 on:
-  # Every branch push -> Smoke only
+  # Push to any branch
   push:
 
-  # PR targeting main -> Smoke + OpenShift Regression
+  # PR targeting main
   pull_request:
     branches:
       - main
 
-  # Allows manual execution -> Smoke only
   workflow_dispatch:
 
 jobs:
@@ -47,7 +46,7 @@ jobs:
           mvn -version
 
       # =====================================================
-      # 3. Smoke - runs for Push, PR and Manual run
+      # 3. Smoke - runs on every Push / PR / Manual execution
       # =====================================================
 
       - name: Run Smoke suite on GitHub runner
@@ -55,29 +54,63 @@ jobs:
           mvn clean test -P Smoke -Dbrowser=chrome -Dheadless=true
 
       # =====================================================
-      # 4. PR ONLY - Build Docker image and push to GHCR
+      # 4. Login to GHCR
+      #
+      # Runs when:
+      #   - PR targets main
+      #   - Code is pushed/merged into main
       # =====================================================
 
       - name: Login to GitHub Container Registry
-        if: github.event_name == 'pull_request'
+        if: >
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image
-        if: github.event_name == 'pull_request'
-        run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} .
+      # =====================================================
+      # 5. PR ONLY - Build SHA image
+      # =====================================================
 
-      - name: Push Docker image
+      - name: Build Docker image for PR
         if: github.event_name == 'pull_request'
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            .
+
+      - name: Push Docker image for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
 
       # =====================================================
-      # 5. PR ONLY - Full Regression in OpenShift
+      # 6. MAIN ONLY - Build SHA + main image
+      # =====================================================
+
+      - name: Build Docker image for main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main \
+            .
+
+      - name: Push Docker image for main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main
+
+      # =====================================================
+      # 7. PR ONLY - OpenShift Regression
       # =====================================================
 
       - name: Install OpenShift CLI
@@ -116,7 +149,7 @@ jobs:
           oc logs job/selenium-regression-${{ github.run_id }} || true
 
       # =====================================================
-      # 6. GitHub Smoke artifacts
+      # 8. GitHub Smoke artifacts
       # =====================================================
 
       - name: Upload Surefire reports
