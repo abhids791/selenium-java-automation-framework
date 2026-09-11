@@ -31,6 +31,7 @@ public class BookFlightTest extends BaseTest {
         landingPage.clickOnOneWay();
         FlightListPage flightListPage=landingPage.clickOnSearchFlightButton();
 
+
         //Select Flight from Departure and Return
         flightListPage.clickOnFirstDepartureFlightDisplayed();
         PassengersDetailsPage passengersDetailsPage = flightListPage.clickOnContinueToPassengerDetailsButton();
