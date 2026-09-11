@@ -2,12 +2,17 @@ package brightlyTestQa.utils;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
+import java.nio.file.Paths;
 
-public class util {
+public class Util {
 
     public static ExtentReports getReporterObject(){
-        String path = System.getProperty("user.dir")+"\\reports\\index.html";
-        ExtentSparkReporter reporter = new ExtentSparkReporter(path);
+        String reportPath = Paths.get(
+                System.getProperty("user.dir"),
+                "reports",
+                "index.html"
+        ).toString();
+        ExtentSparkReporter reporter = new ExtentSparkReporter(reportPath);
         reporter.config().setReportName("Web Automation Results");
         reporter.config().setDocumentTitle("Test Results");
 

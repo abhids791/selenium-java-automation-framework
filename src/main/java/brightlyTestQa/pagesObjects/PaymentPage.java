@@ -57,7 +57,7 @@ public class PaymentPage extends BasePage {
     }
 
     public ConfirmBookingPage clickOnPayAndConfirmBooking(){
-        payButton.click();
+        clickElement(payButton);
         return new ConfirmBookingPage(driver);
     }
 }

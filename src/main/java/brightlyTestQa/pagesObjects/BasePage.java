@@ -1,6 +1,8 @@
 package brightlyTestQa.pagesObjects;
 
 import brightlyTestQa.AbstractComponents.AbstractComponent;
+import org.openqa.selenium.ElementClickInterceptedException;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -44,6 +46,17 @@ public class BasePage extends AbstractComponent {
 
     public void scrollUpAndClick(WebElement element, int yaxis) {
         waitForElementToAppearAndScrollTo(element, yaxis);
-        element.click();
+        clickElement(element);
+    }
+
+    public void clickElement(WebElement element) {
+        wait.until(ExpectedConditions.elementToBeClickable(element));
+        try {
+            element.click();
+        } catch (ElementClickInterceptedException e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+            wait.until(ExpectedConditions.elementToBeClickable(element));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+        }
     }
 }
