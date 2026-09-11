@@ -17,7 +17,7 @@ public class BookFlightTwoWay extends BaseTest {
 
         //Enter Search Details
         landingPage.selectValueInFromDropDown("Sydney");
-        landingPage.selectValueInToDropDown("Mumbai");
+        landingPage.selectValueInToDropDown("Delhi");
         landingPage.selectValueFromDepartureDate("09-09-2026");
         landingPage.selectValueFromReturnDate("16-09-2026");
         landingPage.enterValueInPassengersInputField("2");
