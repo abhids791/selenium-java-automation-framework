@@ -129,6 +129,14 @@ jobs:
 
           oc project "${{ vars.OPENSHIFT_NAMESPACE }}"
 
+      # =====================================================
+      # Create Regression Job
+      #
+      # backoffLimit = 0
+      # Prevents OpenShift from creating replacement pods
+      # when Selenium Regression fails.
+      # =====================================================
+
       - name: Create Regression Job in OpenShift
         if: github.event_name == 'pull_request'
         run: |
@@ -142,13 +150,54 @@ jobs:
             --type=merge \
             -p '{"spec":{"backoffLimit":0}}'
 
+      # =====================================================
+      # Wait for Regression
+      #
+      # Checks BOTH:
+      #   Complete=True → PASS
+      #   Failed=True   → FAIL
+      #
+      # Checks every 5 seconds.
+      # Maximum wait = 15 minutes.
+      # =====================================================
+
       - name: Wait for OpenShift Regression Job
         if: github.event_name == 'pull_request'
         run: |
-          oc wait \
-            --for=condition=complete \
-            job/selenium-regression-${{ github.run_id }} \
-            --timeout=15m
+          JOB_NAME=selenium-regression-${{ github.run_id }}
+
+          for i in {1..180}; do
+
+            if oc get job $JOB_NAME \
+              -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' \
+              | grep -q True; then
+
+              echo "Regression Job completed successfully."
+              exit 0
+            fi
+
+            if oc get job $JOB_NAME \
+              -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' \
+              | grep -q True; then
+
+              echo "Regression Job failed."
+              exit 1
+            fi
+
+            echo "Regression Job is still running..."
+            sleep 5
+
+          done
+
+          echo "Regression Job timed out after 15 minutes."
+          exit 1
+
+      # =====================================================
+      # Show Regression logs
+      #
+      # always() ensures logs are printed for both:
+      # PASS and FAIL
+      # =====================================================
 
       - name: Show OpenShift Regression logs
         if: always() && github.event_name == 'pull_request'
