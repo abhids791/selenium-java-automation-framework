@@ -126,14 +126,21 @@ jobs:
         run: |
           oc login "${{ vars.OPENSHIFT_SERVER }}" \
             --token="${{ secrets.OPENSHIFT_TOKEN }}"
+
           oc project "${{ vars.OPENSHIFT_NAMESPACE }}"
 
       - name: Create Regression Job in OpenShift
         if: github.event_name == 'pull_request'
         run: |
-          oc create job selenium-regression-${{ github.run_id }} \
+          JOB_NAME=selenium-regression-${{ github.run_id }}
+
+          oc create job $JOB_NAME \
             --image=ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
             -- mvn clean test -P Regression -Dbrowser=chrome -Dheadless=true
+
+          oc patch job $JOB_NAME \
+            --type=merge \
+            -p '{"spec":{"backoffLimit":0}}'
 
       - name: Wait for OpenShift Regression Job
         if: github.event_name == 'pull_request'
