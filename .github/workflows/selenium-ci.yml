@@ -1,100 +1,286 @@
-# =====================================================
-# 8. Collect OpenShift Regression artifacts
-# =====================================================
+name: Selenium Java CI
 
-- name: Get Regression Pod name
-  if: always() && github.event_name == 'pull_request'
-  id: regression-pod
-  run: |
-    POD_NAME=$(oc get pods \
-      -l job-name=selenium-regression-${{ github.run_id }} \
-      -o jsonpath='{.items[0].metadata.name}')
-    
-    echo "pod_name=$POD_NAME" >> $GITHUB_OUTPUT
-    echo "Regression Pod: $POD_NAME"
+permissions:
+  contents: read
+  packages: write
 
-- name: Copy Regression Extent report
-  if: always() && github.event_name == 'pull_request'
-  run: |
-    mkdir -p regression-artifacts/extent-report
-    
-    oc cp \
-      ${{ steps.regression-pod.outputs.pod_name }}:/app/reports/. \
-      regression-artifacts/extent-report/ \
-      || true
+on:
+  push:
 
-- name: Copy Regression Surefire reports
-  if: always() && github.event_name == 'pull_request'
-  run: |
-    mkdir -p regression-artifacts/surefire-reports
-    
-    oc cp \
-      ${{ steps.regression-pod.outputs.pod_name }}:/app/target/surefire-reports/. \
-      regression-artifacts/surefire-reports/ \
-      || true
+  pull_request:
+    branches:
+      - main
 
-- name: Copy Regression failure screenshots
-  if: always() && github.event_name == 'pull_request'
-  run: |
-    mkdir -p regression-artifacts/screenshots
-    
-    oc cp \
-      ${{ steps.regression-pod.outputs.pod_name }}:/app/src/main/resources/screenShots/. \
-      regression-artifacts/screenshots/ \
-      || true
+  workflow_dispatch:
 
-# =====================================================
-# 9. Upload Regression artifacts to GitHub
-# =====================================================
+jobs:
+  test:
+    name: Selenium CI
+    runs-on: ubuntu-latest
 
-- name: Upload Regression Extent report
-  if: always() && github.event_name == 'pull_request'
-  uses: actions/upload-artifact@v4
-  with:
-    name: regression-extent-report
-    path: regression-artifacts/extent-report
-    if-no-files-found: warn
+    steps:
 
-- name: Upload Regression Surefire reports
-  if: always() && github.event_name == 'pull_request'
-  uses: actions/upload-artifact@v4
-  with:
-    name: regression-surefire-reports
-    path: regression-artifacts/surefire-reports
-    if-no-files-found: warn
+      # =====================================================
+      # 1. Checkout
+      # =====================================================
 
-- name: Upload Regression failure screenshots
-  if: always() && github.event_name == 'pull_request'
-  uses: actions/upload-artifact@v4
-  with:
-    name: regression-failure-screenshots
-    path: regression-artifacts/screenshots
-    if-no-files-found: ignore
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-# =====================================================
-# 10. GitHub Smoke artifacts
-# =====================================================
+      # =====================================================
+      # 2. Java / Maven setup
+      # =====================================================
 
-- name: Upload Smoke Surefire reports
-  if: always()
-  uses: actions/upload-artifact@v4
-  with:
-    name: smoke-surefire-reports
-    path: target/surefire-reports
-    if-no-files-found: warn
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
 
-- name: Upload Smoke Extent report
-  if: always()
-  uses: actions/upload-artifact@v4
-  with:
-    name: smoke-extent-report
-    path: reports
-    if-no-files-found: warn
+      - name: Show Java and Maven versions
+        run: |
+          java -version
+          mvn -version
 
-- name: Upload Smoke failure screenshots
-  if: always()
-  uses: actions/upload-artifact@v4
-  with:
-    name: smoke-failure-screenshots
-    path: src/main/resources/screenShots
-    if-no-files-found: ignore
+      # =====================================================
+      # 3. Smoke
+      # =====================================================
+
+      - name: Run Smoke suite on GitHub runner
+        run: |
+          mvn clean test -P Smoke -Dbrowser=chrome -Dheadless=true
+
+      # =====================================================
+      # 4. Login to GHCR
+      # =====================================================
+
+      - name: Login to GitHub Container Registry
+        if: >
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # =====================================================
+      # 5. PR ONLY - Build SHA image
+      # =====================================================
+
+      - name: Build Docker image for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            .
+
+      - name: Push Docker image for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
+      # =====================================================
+      # 6. MAIN ONLY - Build SHA + main image
+      # =====================================================
+
+      - name: Build Docker image for main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main \
+            .
+
+      - name: Push Docker image for main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main
+
+      # =====================================================
+      # 7. PR ONLY - OpenShift Regression
+      # =====================================================
+
+      - name: Install OpenShift CLI
+        if: github.event_name == 'pull_request'
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+          tar -xzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/oc
+          oc version --client
+
+      - name: Login to OpenShift
+        if: github.event_name == 'pull_request'
+        run: |
+          oc login "${{ vars.OPENSHIFT_SERVER }}" \
+            --token="${{ secrets.OPENSHIFT_TOKEN }}"
+
+          oc project "${{ vars.OPENSHIFT_NAMESPACE }}"
+
+      - name: Create Regression Job in OpenShift
+        if: github.event_name == 'pull_request'
+        run: |
+          JOB_NAME=selenium-regression-${{ github.run_id }}
+
+          oc create job $JOB_NAME \
+            --image=ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            -- mvn clean test -P Regression -Dbrowser=chrome -Dheadless=true
+
+          oc patch job $JOB_NAME \
+            --type=merge \
+            -p '{"spec":{"backoffLimit":0}}'
+
+      # =====================================================
+      # 8. Wait for Regression result
+      # =====================================================
+
+      - name: Wait for OpenShift Regression Job
+        if: github.event_name == 'pull_request'
+        run: |
+          JOB_NAME=selenium-regression-${{ github.run_id }}
+
+          for i in {1..180}; do
+
+            if oc get job $JOB_NAME \
+              -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' \
+              | grep -q True; then
+
+              echo "Regression Job completed successfully."
+              exit 0
+            fi
+
+            if oc get job $JOB_NAME \
+              -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' \
+              | grep -q True; then
+
+              echo "Regression Job failed."
+              exit 1
+            fi
+
+            echo "Regression Job is still running..."
+            sleep 5
+
+          done
+
+          echo "Regression Job timed out after 15 minutes."
+          exit 1
+
+      # =====================================================
+      # 9. Show OpenShift Regression logs
+      # =====================================================
+
+      - name: Show OpenShift Regression logs
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          oc logs job/selenium-regression-${{ github.run_id }} || true
+
+      # =====================================================
+      # 10. Get Regression pod name
+      # =====================================================
+
+      - name: Get Regression Pod name
+        if: always() && github.event_name == 'pull_request'
+        id: regression-pod
+        run: |
+          POD_NAME=$(oc get pods \
+            -l job-name=selenium-regression-${{ github.run_id }} \
+            -o jsonpath='{.items[0].metadata.name}')
+
+          echo "pod_name=$POD_NAME" >> $GITHUB_OUTPUT
+          echo "Regression Pod: $POD_NAME"
+
+      # =====================================================
+      # 11. Copy Regression artifacts from OpenShift
+      # =====================================================
+
+      - name: Copy Regression Extent report
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          mkdir -p regression-artifacts/extent-report
+
+          oc cp \
+            ${{ steps.regression-pod.outputs.pod_name }}:/app/reports/. \
+            regression-artifacts/extent-report/ \
+            || true
+
+      - name: Copy Regression Surefire reports
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          mkdir -p regression-artifacts/surefire-reports
+
+          oc cp \
+            ${{ steps.regression-pod.outputs.pod_name }}:/app/target/surefire-reports/. \
+            regression-artifacts/surefire-reports/ \
+            || true
+
+      - name: Copy Regression failure screenshots
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          mkdir -p regression-artifacts/screenshots
+
+          oc cp \
+            ${{ steps.regression-pod.outputs.pod_name }}:/app/src/main/resources/screenShots/. \
+            regression-artifacts/screenshots/ \
+            || true
+
+      # =====================================================
+      # 12. Upload Regression artifacts
+      # =====================================================
+
+      - name: Upload Regression Extent report
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-extent-report
+          path: regression-artifacts/extent-report
+          if-no-files-found: warn
+
+      - name: Upload Regression Surefire reports
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-surefire-reports
+          path: regression-artifacts/surefire-reports
+          if-no-files-found: warn
+
+      - name: Upload Regression failure screenshots
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-failure-screenshots
+          path: regression-artifacts/screenshots
+          if-no-files-found: ignore
+
+      # =====================================================
+      # 13. Upload Smoke artifacts
+      # =====================================================
+
+      - name: Upload Smoke Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-surefire-reports
+          path: target/surefire-reports
+          if-no-files-found: warn
+
+      - name: Upload Smoke Extent report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-extent-report
+          path: reports
+          if-no-files-found: warn
+
+      - name: Upload Smoke failure screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-failure-screenshots
+          path: src/main/resources/screenShots
+          if-no-files-found: ignore
