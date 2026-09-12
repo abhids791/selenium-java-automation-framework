@@ -16,15 +16,17 @@ WORKDIR /app
 
 ENV HOME=/tmp
 ENV MAVEN_CONFIG=/tmp/.m2
+ENV MAVEN_OPTS="-Dmaven.repo.local=/tmp/.m2/repository"
 
 COPY pom.xml .
 
-RUN mvn -P Smoke dependency:go-offline
+RUN mvn -B -P Smoke dependency:go-offline && \
+    mvn -B -P Smoke -DskipTests test-compile
 
 COPY . .
 
 RUN mkdir -p /app/reports /app/target /app/src/main/resources/screenShots && \
-    chgrp -R 0 /app && \
-    chmod -R g=u /app
+    chgrp -R 0 /app /tmp/.m2 && \
+    chmod -R g=u /app /tmp/.m2
 
 CMD ["mvn", "clean", "test", "-P", "Smoke", "-Dbrowser=chrome", "-Dheadless=true"]
