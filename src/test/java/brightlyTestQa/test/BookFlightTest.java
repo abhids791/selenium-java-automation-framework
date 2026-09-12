@@ -90,7 +90,7 @@ public class BookFlightTest extends BaseTest {
         ConfirmBookingPage confirmBookingPage= paymentPage.clickOnPayAndConfirmBooking();
 
         //Book Confirmed Page
-        Assert.assertEquals(confirmBookingPage.verifyConfirmBooking(),"Booking Confirmed! Failed");
+        Assert.assertEquals(confirmBookingPage.verifyConfirmBooking(),"Booking Confirmed!");
 
     }
 
