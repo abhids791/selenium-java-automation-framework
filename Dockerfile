@@ -19,7 +19,8 @@ ENV MAVEN_CONFIG=/tmp/.m2
 
 COPY pom.xml .
 
-RUN mvn -P Smoke dependency:go-offline
+RUN mvn -B -P Smoke dependency:go-offline && \
+    mvn -B -P Smoke -DskipTests test-compile
 
 COPY . .
 
