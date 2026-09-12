@@ -24,7 +24,7 @@ public class ErrorValidationTest extends BaseTest {
     public void testErrorValidationForFromField() {
         // Add your test logic here
         landingPage.selectValueInToDropDown("Tokyo");
-        landingPage.selectValueFromDepartureDate("09-09-2026");
+        landingPage.selectValueFromDepartureDate("14-09-2026");
         landingPage.enterValueInPassengersInputField("2");
         landingPage.clickOnOneWay();
         landingPage.clickOnSearchFlightButton();
