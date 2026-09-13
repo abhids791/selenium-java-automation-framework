@@ -104,7 +104,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main
 
       # =====================================================
-      # 7. PR ONLY - OpenShift Regression
+      # 7. PR ONLY - Install / Login OpenShift
       # =====================================================
 
       - name: Install OpenShift CLI
@@ -123,24 +123,88 @@ jobs:
 
           oc project "${{ vars.OPENSHIFT_NAMESPACE }}"
 
+      # =====================================================
+      # 8. Create Regression Job with PVC
+      # =====================================================
+
       - name: Create Regression Job in OpenShift
+        id: create-regression
         if: github.event_name == 'pull_request'
         run: |
-          JOB_NAME=selenium-regression-${{ github.run_id }}
+          cat <<'EOF' | oc apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: selenium-regression-${{ github.run_id }}
+          spec:
+            backoffLimit: 0
 
-          oc create job $JOB_NAME \
-            --image=ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
-            -- mvn clean test -P Regression -Dbrowser=chrome -Dheadless=true
+            template:
+              spec:
+                restartPolicy: Never
 
-          oc patch job $JOB_NAME \
-            --type=merge \
-            -p '{"spec":{"backoffLimit":0}}'
+                containers:
+                  - name: selenium-regression
+
+                    image: ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
+                    command:
+                      - /bin/sh
+                      - -c
+
+                    args:
+                      - |
+                        echo "Starting Selenium Regression"
+
+                        RUN_ID="${{ github.run_id }}"
+                        RESULT_DIR="/test-results/${RUN_ID}"
+
+                        mkdir -p "${RESULT_DIR}/extent"
+                        mkdir -p "${RESULT_DIR}/surefire"
+                        mkdir -p "${RESULT_DIR}/screenshots"
+
+                        mvn clean test -P Regression -Dbrowser=chrome -Dheadless=true
+
+                        RESULT=$?
+
+                        echo "Regression Maven exit code: ${RESULT}"
+                        echo "Saving reports to PVC..."
+
+                        if [ -d "/app/reports" ]; then
+                          cp -r /app/reports/. "${RESULT_DIR}/extent/" || true
+                        fi
+
+                        if [ -d "/app/target/surefire-reports" ]; then
+                          cp -r /app/target/surefire-reports/. "${RESULT_DIR}/surefire/" || true
+                        fi
+
+                        if [ -d "/app/src/main/resources/screenShots" ]; then
+                          cp -r /app/src/main/resources/screenShots/. "${RESULT_DIR}/screenshots/" || true
+                        fi
+
+                        echo "${RESULT}" > "${RESULT_DIR}/test-exit-code.txt"
+
+                        echo "Regression artifacts saved to:"
+                        echo "${RESULT_DIR}"
+
+                        exit "${RESULT}"
+
+                    volumeMounts:
+                      - name: selenium-results-storage
+                        mountPath: /test-results
+
+                volumes:
+                  - name: selenium-results-storage
+                    persistentVolumeClaim:
+                      claimName: selenium-results-pvc
+          EOF
 
       # =====================================================
-      # 8. Wait for Regression result
+      # 9. Wait for Regression result
       # =====================================================
 
       - name: Wait for OpenShift Regression Job
+        id: regression-result
         if: github.event_name == 'pull_request'
         run: |
           JOB_NAME=selenium-regression-${{ github.run_id }}
@@ -172,85 +236,137 @@ jobs:
           exit 1
 
       # =====================================================
-      # 9. Show OpenShift Regression logs
+      # 10. Show Regression logs
       # =====================================================
 
       - name: Show OpenShift Regression logs
-        if: always() && github.event_name == 'pull_request'
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
         run: |
           oc logs job/selenium-regression-${{ github.run_id }} || true
 
       # =====================================================
-      # 10. Get Regression pod name
+      # 11. Create temporary reader Pod
+      #
+      # Regression Pod may already be Failed/Completed.
+      # This new running Pod mounts the SAME PVC.
       # =====================================================
 
-      - name: Get Regression Pod name
-        if: always() && github.event_name == 'pull_request'
-        id: regression-pod
+      - name: Create PVC Reader Pod
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
         run: |
-          POD_NAME=$(oc get pods \
-            -l job-name=selenium-regression-${{ github.run_id }} \
-            -o jsonpath='{.items[0].metadata.name}')
+          cat <<'EOF' | oc apply -f -
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: selenium-results-reader-${{ github.run_id }}
+          spec:
+            restartPolicy: Never
 
-          echo "pod_name=$POD_NAME" >> $GITHUB_OUTPUT
-          echo "Regression Pod: $POD_NAME"
+            containers:
+              - name: reader
+
+                image: ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
+                command:
+                  - /bin/sh
+                  - -c
+
+                args:
+                  - |
+                    echo "Results reader pod started"
+                    sleep 3600
+
+                volumeMounts:
+                  - name: selenium-results-storage
+                    mountPath: /test-results
+
+            volumes:
+              - name: selenium-results-storage
+                persistentVolumeClaim:
+                  claimName: selenium-results-pvc
+          EOF
+
+          oc wait \
+            --for=condition=Ready \
+            pod/selenium-results-reader-${{ github.run_id }} \
+            --timeout=120s
 
       # =====================================================
-      # 11. Copy Regression artifacts from OpenShift
+      # 12. Verify data exists in PVC
       # =====================================================
 
-      - name: Copy Regression Extent report
-        if: always() && github.event_name == 'pull_request'
+      - name: Show Regression results stored in PVC
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
         run: |
-          mkdir -p regression-artifacts/extent-report
+          echo "Files stored in OpenShift persistent volume:"
 
-          oc cp \
-            ${{ steps.regression-pod.outputs.pod_name }}:/app/reports/. \
-            regression-artifacts/extent-report/ \
+          oc exec selenium-results-reader-${{ github.run_id }} \
+            -- find /test-results/${{ github.run_id }} \
+            -maxdepth 3 \
+            -type f \
             || true
 
-      - name: Copy Regression Surefire reports
-        if: always() && github.event_name == 'pull_request'
+      # =====================================================
+      # 13. Copy Regression artifacts FROM PVC
+      #
+      # Notice:
+      # We are NOT copying from the Failed Regression Pod.
+      # We copy from the running reader Pod.
+      # =====================================================
+
+      - name: Copy Regression artifacts from PVC
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
         run: |
-          mkdir -p regression-artifacts/surefire-reports
+          mkdir -p regression-artifacts
 
           oc cp \
-            ${{ steps.regression-pod.outputs.pod_name }}:/app/target/surefire-reports/. \
-            regression-artifacts/surefire-reports/ \
-            || true
-
-      - name: Copy Regression failure screenshots
-        if: always() && github.event_name == 'pull_request'
-        run: |
-          mkdir -p regression-artifacts/screenshots
-
-          oc cp \
-            ${{ steps.regression-pod.outputs.pod_name }}:/app/src/main/resources/screenShots/. \
-            regression-artifacts/screenshots/ \
+            selenium-results-reader-${{ github.run_id }}:/test-results/${{ github.run_id }}/. \
+            regression-artifacts/ \
             || true
 
       # =====================================================
-      # 12. Upload Regression artifacts
+      # 14. Upload Regression artifacts to GitHub
       # =====================================================
 
       - name: Upload Regression Extent report
-        if: always() && github.event_name == 'pull_request'
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: regression-extent-report
-          path: regression-artifacts/extent-report
+          path: regression-artifacts/extent
           if-no-files-found: warn
 
       - name: Upload Regression Surefire reports
-        if: always() && github.event_name == 'pull_request'
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: regression-surefire-reports
-          path: regression-artifacts/surefire-reports
+          path: regression-artifacts/surefire
           if-no-files-found: warn
 
       - name: Upload Regression failure screenshots
-        if: always() && github.event_name == 'pull_request'
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: regression-failure-screenshots
@@ -258,7 +374,24 @@ jobs:
           if-no-files-found: ignore
 
       # =====================================================
-      # 13. Upload Smoke artifacts
+      # 15. Delete temporary PVC reader Pod
+      #
+      # PVC itself is NOT deleted.
+      # Reports stay in OpenShift.
+      # =====================================================
+
+      - name: Delete PVC Reader Pod
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
+        run: |
+          oc delete pod \
+            selenium-results-reader-${{ github.run_id }} \
+            --ignore-not-found=true
+
+      # =====================================================
+      # 16. Upload Smoke artifacts
       # =====================================================
 
       - name: Upload Smoke Surefire reports
