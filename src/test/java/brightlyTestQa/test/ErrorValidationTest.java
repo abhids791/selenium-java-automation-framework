@@ -17,7 +17,7 @@ public class ErrorValidationTest extends BaseTest {
         landingPage.enterValueInPassengersInputField("2");
         landingPage.clickOnOneWay();
         landingPage.clickOnSearchFlightButton();
-        Assert.assertEquals(landingPage.getToFieldErrorMessage(), "Please select a destination city. Failed for Regressions");
+        Assert.assertEquals(landingPage.getToFieldErrorMessage(), "Please select a destination city. Failed for Regressions!");
     }
 
     @Test(groups = {"Regression", "Smoke"}, retryAnalyzer = RetryWhenTestFailed.class)
