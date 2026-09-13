@@ -27,6 +27,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+
       # =====================================================
       # 2. Java / Maven setup
       # =====================================================
@@ -43,6 +44,7 @@ jobs:
           java -version
           mvn -version
 
+
       # =====================================================
       # 3. Smoke
       # =====================================================
@@ -50,6 +52,7 @@ jobs:
       - name: Run Smoke suite on GitHub runner
         run: |
           mvn clean test -P Smoke -Dbrowser=chrome -Dheadless=true
+
 
       # =====================================================
       # 4. Login to GHCR
@@ -64,6 +67,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
 
       # =====================================================
       # 5. PR ONLY - Build SHA image
@@ -81,6 +85,7 @@ jobs:
         run: |
           docker push \
             ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+
 
       # =====================================================
       # 6. MAIN ONLY - Build SHA + main image
@@ -103,6 +108,7 @@ jobs:
           docker push \
             ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main
 
+
       # =====================================================
       # 7. PR ONLY - Install / Login OpenShift
       # =====================================================
@@ -123,6 +129,7 @@ jobs:
 
           oc project "${{ vars.OPENSHIFT_NAMESPACE }}"
 
+
       # =====================================================
       # 8. Create Regression Job with PVC
       # =====================================================
@@ -134,8 +141,10 @@ jobs:
           cat <<'EOF' | oc apply -f -
           apiVersion: batch/v1
           kind: Job
+
           metadata:
             name: selenium-regression-${{ github.run_id }}
+
           spec:
             backoffLimit: 0
 
@@ -197,7 +206,9 @@ jobs:
                   - name: selenium-results-storage
                     persistentVolumeClaim:
                       claimName: selenium-results-pvc
+
           EOF
+
 
       # =====================================================
       # 9. Wait for Regression result
@@ -235,6 +246,7 @@ jobs:
           echo "Regression Job timed out after 15 minutes."
           exit 1
 
+
       # =====================================================
       # 10. Show Regression logs
       # =====================================================
@@ -246,6 +258,7 @@ jobs:
           steps.create-regression.outcome == 'success'
         run: |
           oc logs job/selenium-regression-${{ github.run_id }} || true
+
 
       # =====================================================
       # 11. Create temporary reader Pod
@@ -263,8 +276,10 @@ jobs:
           cat <<'EOF' | oc apply -f -
           apiVersion: v1
           kind: Pod
+
           metadata:
             name: selenium-results-reader-${{ github.run_id }}
+
           spec:
             restartPolicy: Never
 
@@ -290,12 +305,14 @@ jobs:
               - name: selenium-results-storage
                 persistentVolumeClaim:
                   claimName: selenium-results-pvc
+
           EOF
 
           oc wait \
             --for=condition=Ready \
             pod/selenium-results-reader-${{ github.run_id }} \
             --timeout=120s
+
 
       # =====================================================
       # 12. Verify data exists in PVC
@@ -315,10 +332,10 @@ jobs:
             -type f \
             || true
 
+
       # =====================================================
       # 13. Copy Regression artifacts FROM PVC
       #
-      # Notice:
       # We are NOT copying from the Failed Regression Pod.
       # We copy from the running reader Pod.
       # =====================================================
@@ -335,6 +352,7 @@ jobs:
             selenium-results-reader-${{ github.run_id }}:/test-results/${{ github.run_id }}/. \
             regression-artifacts/ \
             || true
+
 
       # =====================================================
       # 14. Upload Regression artifacts to GitHub
@@ -373,8 +391,157 @@ jobs:
           path: regression-artifacts/screenshots
           if-no-files-found: ignore
 
+
       # =====================================================
-      # 15. Delete temporary PVC reader Pod
+      # 15. Send Regression email
+      # =====================================================
+
+      - name: Send Regression result email
+        if: >
+          always() &&
+          github.event_name == 'pull_request' &&
+          steps.create-regression.outcome == 'success'
+        continue-on-error: true
+
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          REPORT_EMAIL_TO: ${{ vars.REPORT_EMAIL_TO }}
+
+          REGRESSION_OUTCOME: ${{ steps.regression-result.outcome }}
+
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+
+          BRANCH_NAME: ${{ github.head_ref }}
+          COMMIT_SHA: ${{ github.sha }}
+
+          REPOSITORY: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+
+        run: |
+          python <<'PY'
+          import os
+          import smtplib
+
+          from email.message import EmailMessage
+          from pathlib import Path
+
+
+          outcome = os.environ.get("REGRESSION_OUTCOME", "failure")
+
+          if outcome == "success":
+              status = "PASSED"
+              status_icon = "✅"
+          else:
+              status = "FAILED"
+              status_icon = "❌"
+
+
+          run_number = os.environ["RUN_NUMBER"]
+          run_id = os.environ["RUN_ID"]
+
+          branch = os.environ.get("BRANCH_NAME", "")
+          commit = os.environ["COMMIT_SHA"][:7]
+
+          repository = os.environ["REPOSITORY"]
+          server_url = os.environ["SERVER_URL"]
+
+          run_url = (
+              f"{server_url}/"
+              f"{repository}/actions/runs/"
+              f"{run_id}"
+          )
+
+
+          msg = EmailMessage()
+
+          msg["Subject"] = (
+              f"{status_icon} Selenium Regression {status} "
+              f"- Run #{run_number}"
+          )
+
+          msg["From"] = os.environ["EMAIL_USERNAME"]
+
+          msg["To"] = os.environ["REPORT_EMAIL_TO"]
+
+
+          body = f"""
+          Selenium Automation Regression Result
+
+          Status     : {status}
+          Repository : {repository}
+          Branch     : {branch}
+          Commit     : {commit}
+          Run        : #{run_number}
+
+          GitHub Actions Run:
+          {run_url}
+
+          The Selenium Regression Extent Report is attached to this email.
+
+          This notification was generated automatically by GitHub Actions.
+          """
+
+          msg.set_content(body)
+
+
+          report = Path(
+              "regression-artifacts/extent/index.html"
+          )
+
+
+          if report.exists():
+
+              print(
+                  f"Attaching Extent report: {report}"
+              )
+
+              with report.open("rb") as file:
+
+                  msg.add_attachment(
+                      file.read(),
+                      maintype="text",
+                      subtype="html",
+                      filename="Regression-Extent-Report.html"
+                  )
+
+          else:
+
+              print(
+                  "Extent report not found. "
+                  "Email will be sent without attachment."
+              )
+
+
+          print(
+              f"Sending Regression result email to "
+              f"{os.environ['REPORT_EMAIL_TO']}"
+          )
+
+
+          with smtplib.SMTP_SSL(
+              "smtp.gmail.com",
+              465
+          ) as smtp:
+
+              smtp.login(
+                  os.environ["EMAIL_USERNAME"],
+                  os.environ["EMAIL_APP_PASSWORD"]
+              )
+
+              smtp.send_message(msg)
+
+
+          print(
+              "Regression result email sent successfully."
+          )
+
+          PY
+
+
+      # =====================================================
+      # 16. Delete temporary PVC reader Pod
       #
       # PVC itself is NOT deleted.
       # Reports stay in OpenShift.
@@ -390,8 +557,9 @@ jobs:
             selenium-results-reader-${{ github.run_id }} \
             --ignore-not-found=true
 
+
       # =====================================================
-      # 16. Upload Smoke artifacts
+      # 17. Upload Smoke artifacts
       # =====================================================
 
       - name: Upload Smoke Surefire reports
