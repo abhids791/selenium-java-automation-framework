@@ -262,9 +262,6 @@ jobs:
 
       # =====================================================
       # 11. Create temporary reader Pod
-      #
-      # Regression Pod may already be Failed/Completed.
-      # This new running Pod mounts the SAME PVC.
       # =====================================================
 
       - name: Create PVC Reader Pod
@@ -335,9 +332,6 @@ jobs:
 
       # =====================================================
       # 13. Copy Regression artifacts FROM PVC
-      #
-      # We are NOT copying from the Failed Regression Pod.
-      # We copy from the running reader Pod.
       # =====================================================
 
       - name: Copy Regression artifacts from PVC
@@ -359,6 +353,7 @@ jobs:
       # =====================================================
 
       - name: Upload Regression Extent report
+        id: upload-regression-extent
         if: >
           always() &&
           github.event_name == 'pull_request' &&
@@ -370,6 +365,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload Regression Surefire reports
+        id: upload-regression-surefire
         if: >
           always() &&
           github.event_name == 'pull_request' &&
@@ -381,6 +377,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload Regression failure screenshots
+        id: upload-regression-screenshots
         if: >
           always() &&
           github.event_name == 'pull_request' &&
@@ -410,6 +407,10 @@ jobs:
 
           REGRESSION_OUTCOME: ${{ steps.regression-result.outcome }}
 
+          EXTENT_ARTIFACT_URL: ${{ steps.upload-regression-extent.outputs.artifact-url }}
+          SCREENSHOT_ARTIFACT_URL: ${{ steps.upload-regression-screenshots.outputs.artifact-url }}
+          SUREFIRE_ARTIFACT_URL: ${{ steps.upload-regression-surefire.outputs.artifact-url }}
+
           RUN_NUMBER: ${{ github.run_number }}
           RUN_ID: ${{ github.run_id }}
 
@@ -433,9 +434,11 @@ jobs:
           if outcome == "success":
               status = "PASSED"
               status_icon = "✅"
+              status_color = "#2e7d32"
           else:
               status = "FAILED"
               status_icon = "❌"
+              status_color = "#c62828"
 
 
           run_number = os.environ["RUN_NUMBER"]
@@ -446,6 +449,10 @@ jobs:
 
           repository = os.environ["REPOSITORY"]
           server_url = os.environ["SERVER_URL"]
+
+          extent_url = os.environ.get("EXTENT_ARTIFACT_URL", "")
+          screenshot_url = os.environ.get("SCREENSHOT_ARTIFACT_URL", "")
+          surefire_url = os.environ.get("SUREFIRE_ARTIFACT_URL", "")
 
           run_url = (
               f"{server_url}/"
@@ -462,11 +469,10 @@ jobs:
           )
 
           msg["From"] = os.environ["EMAIL_USERNAME"]
-
           msg["To"] = os.environ["REPORT_EMAIL_TO"]
 
 
-          body = f"""
+          text_body = f"""
           Selenium Automation Regression Result
 
           Status     : {status}
@@ -478,12 +484,96 @@ jobs:
           GitHub Actions Run:
           {run_url}
 
-          The Selenium Regression Extent Report is attached to this email.
+          Extent Report:
+          {extent_url}
+
+          Failure Screenshots:
+          {screenshot_url}
+
+          Surefire Reports:
+          {surefire_url}
 
           This notification was generated automatically by GitHub Actions.
           """
 
-          msg.set_content(body)
+          msg.set_content(text_body)
+
+
+          html_body = f"""
+          <html>
+            <body style="font-family: Arial, sans-serif;">
+
+              <h2>Selenium Automation Regression Result</h2>
+
+              <p>
+                <strong>Status:</strong>
+                <span style="color:{status_color}; font-size:18px;">
+                  {status_icon} {status}
+                </span>
+              </p>
+
+              <table cellpadding="6" cellspacing="0" border="0">
+                <tr>
+                  <td><strong>Repository</strong></td>
+                  <td>{repository}</td>
+                </tr>
+
+                <tr>
+                  <td><strong>Branch</strong></td>
+                  <td>{branch}</td>
+                </tr>
+
+                <tr>
+                  <td><strong>Commit</strong></td>
+                  <td>{commit}</td>
+                </tr>
+
+                <tr>
+                  <td><strong>Run</strong></td>
+                  <td>#{run_number}</td>
+                </tr>
+              </table>
+
+              <br>
+
+              <p>
+                <a href="{run_url}">
+                  View GitHub Actions Run
+                </a>
+              </p>
+
+              <p>
+                <a href="{extent_url}">
+                  Download Regression Extent Report
+                </a>
+              </p>
+
+              <p>
+                <a href="{screenshot_url}">
+                  Download Failure Screenshots
+                </a>
+              </p>
+
+              <p>
+                <a href="{surefire_url}">
+                  Download Surefire Reports
+                </a>
+              </p>
+
+              <hr>
+
+              <p style="font-size:12px;color:#666;">
+                Generated automatically by GitHub Actions.
+              </p>
+
+            </body>
+          </html>
+          """
+
+          msg.add_alternative(
+              html_body,
+              subtype="html"
+          )
 
 
           report = Path(
@@ -542,9 +632,6 @@ jobs:
 
       # =====================================================
       # 16. Delete temporary PVC reader Pod
-      #
-      # PVC itself is NOT deleted.
-      # Reports stay in OpenShift.
       # =====================================================
 
       - name: Delete PVC Reader Pod
