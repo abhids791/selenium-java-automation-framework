@@ -84,7 +84,7 @@ public class BookFlightTest extends BaseTest {
         //Payment Page
 
         Assert.assertEquals(paymentPage.verifyPaymentPage(),"Payment");
-        paymentPage.enterValueInCardNumberField("1234567890123456");
+        paymentPage.enterValueInCardNumberField("1234567890123457");
         paymentPage.enterValueInExpiryField("03/36");
         paymentPage.enterValueInCvvField("123");
         ConfirmBookingPage confirmBookingPage= paymentPage.clickOnPayAndConfirmBooking();
