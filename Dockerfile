@@ -3,7 +3,7 @@ FROM maven:3.9.9-eclipse-temurin-17
 USER root
 
 RUN apt-get update && \
-    apt-get install -y wget gnupg && \
+    apt-get install -y wget gnupg python3 && \
     wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
     | gpg --dearmor -o /usr/share/keyrings/google-linux.gpg && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
