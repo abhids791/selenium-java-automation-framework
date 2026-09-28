@@ -57,6 +57,16 @@
             <artifactId>extentreports</artifactId>
             <version>5.1.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.22.3</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>6.0.1</version>
+        </dependency>
 
     </dependencies>
 
@@ -87,7 +97,7 @@
 
             <properties>
                 <suiteXmlFile>
-                    TestNG-XML/testNG_parallelClassRun_SMOKE_Testing.xml
+                    TestNG-XML/UI/testNG_parallelClassRun_SMOKE_Testing.xml
                 </suiteXmlFile>
             </properties>
         </profile>
@@ -97,7 +107,16 @@
 
             <properties>
                 <suiteXmlFile>
-                    TestNG-XML/testNG_parallelClassRun_REGRESSION_Testing.xml
+                    TestNG-XML/UI/testNG_parallelClassRun_REGRESSION_Testing.xml
+                </suiteXmlFile>
+            </properties>
+        </profile>
+        <profile>
+            <id>Smoke-api</id>
+
+            <properties>
+                <suiteXmlFile>
+                    TestNG-XML/API/testNG_smoke.xml
                 </suiteXmlFile>
             </properties>
         </profile>

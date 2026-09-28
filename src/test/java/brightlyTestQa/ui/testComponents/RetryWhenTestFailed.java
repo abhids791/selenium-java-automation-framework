@@ -1,4 +1,4 @@
-package brightlyTestQa.testComponents;
+package brightlyTestQa.ui.testComponents;
 
 import org.testng.IRetryAnalyzer;
 import org.testng.ITestResult;

@@ -7,11 +7,11 @@
         </run>
     </groups>
     <listeners>
-        <listener class-name="brightlyTestQa.testComponents.Listeners"/>
+        <listener class-name="brightlyTestQa.ui.testComponents.Listeners"/>
     </listeners>
     <test name="BookFlight">
         <classes>
-            <class name="brightlyTestQa.test.BookFlightTest"/>
+            <class name="brightlyTestQa.ui.test.BookFlightTest"/>
         </classes>
     </test>
 </suite>

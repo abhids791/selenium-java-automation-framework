@@ -1,8 +1,8 @@
-package brightlyTestQa.test;
+package brightlyTestQa.ui.test;
 
 import brightlyTestQa.pagesObjects.*;
-import brightlyTestQa.testComponents.BaseTest;
-import brightlyTestQa.testComponents.RetryWhenTestFailed;
+import brightlyTestQa.ui.testComponents.BaseTest;
+import brightlyTestQa.ui.testComponents.RetryWhenTestFailed;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -15,7 +15,7 @@ public class BookFlightTest extends BaseTest {
 
     @DataProvider
     public Object[][] sourceDestinationData() throws IOException {
-        List<HashMap<String, String>> data = getJsonDatgaToMap("src/test/java/brightlyTestQa/data/toFromAddress.json");
+        List<HashMap<String, String>> data = getJsonDataToMap("src/main/resources/uiData/toFromAddress.json");
         return new Object[][] {{data.get(0)}, {data.get(1)}, {data.get(2)}};
     }
 

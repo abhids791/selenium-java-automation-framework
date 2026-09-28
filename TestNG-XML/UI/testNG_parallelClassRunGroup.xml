@@ -7,16 +7,16 @@
             </run>
     </groups>
     <listeners>
-        <listener class-name="brightlyTestQa.testComponents.Listeners"/>
+        <listener class-name="brightlyTestQa.ui.testComponents.Listeners"/>
     </listeners>
     <test  thread-count="5" name="ErrorValidation">
         <classes>
-            <class name="brightlyTestQa.test.ErrorValidationTest"/>
+            <class name="brightlyTestQa.ui.test.ErrorValidationTest"/>
         </classes>
     </test>
     <test name="BookFlight">
         <classes>
-            <class name="brightlyTestQa.test.BookFlightTest"/>
+            <class name="brightlyTestQa.ui.test.BookFlightTest"/>
         </classes>
     </test>
 </suite>
