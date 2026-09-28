@@ -3,5 +3,8 @@
 .github
 target
 reports
+api-target
+api-reports
+api-screenshots
 src/main/resources/screenShots
 *.iml
