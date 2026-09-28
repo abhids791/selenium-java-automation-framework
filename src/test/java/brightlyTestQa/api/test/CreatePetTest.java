@@ -20,7 +20,7 @@ public class CreatePetTest extends BaseTest {
         Response res= petEndPoints.createPet(payload);
         Assert.assertEquals(res.statusCode(), 200);
         petId=Util.getkeyValueFromResponse(res.asString(), "id");
-        Assert.assertEquals(Util.getkeyValueFromResponse(res.asString(), "name"), "doggisssevb1");
+        Assert.assertEquals(Util.getkeyValueFromResponse(res.asString(), "name"), "doggisssevb12");
     }
 
     @Test(priority = 2, dependsOnMethods = "createPetTest1")
