@@ -1,11 +1,11 @@
-package brightlyTestQa.test;
+package brightlyTestQa.ui.test;
 
 import brightlyTestQa.pagesObjects.ConfirmBookingPage;
 import brightlyTestQa.pagesObjects.FlightListPage;
 import brightlyTestQa.pagesObjects.PassengersDetailsPage;
 import brightlyTestQa.pagesObjects.PaymentPage;
-import brightlyTestQa.testComponents.BaseTest;
-import brightlyTestQa.testComponents.RetryWhenTestFailed;
+import brightlyTestQa.ui.testComponents.BaseTest;
+import brightlyTestQa.ui.testComponents.RetryWhenTestFailed;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

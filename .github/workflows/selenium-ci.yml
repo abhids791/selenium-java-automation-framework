@@ -44,6 +44,9 @@ jobs:
           java -version
           mvn -version
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
 
       # =====================================================
       # 3. Smoke
@@ -75,16 +78,13 @@ jobs:
 
       - name: Build Docker image for PR
         if: github.event_name == 'pull_request'
-        run: |
-          docker build \
-            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
-            .
-
-      - name: Push Docker image for PR
-        if: github.event_name == 'pull_request'
-        run: |
-          docker push \
-            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+          cache-from: type=gha,scope=selenium-java-tests
+          cache-to: type=gha,mode=max,scope=selenium-java-tests
 
 
       # =====================================================
@@ -93,20 +93,42 @@ jobs:
 
       - name: Build Docker image for main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          docker build \
-            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
-            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main \
-            .
-
-      - name: Push Docker image for main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          docker push \
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
             ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
-
-          docker push \
             ghcr.io/${{ github.repository_owner }}/selenium-java-tests:main
+          cache-from: type=gha,scope=selenium-java-tests
+          cache-to: type=gha,mode=max,scope=selenium-java-tests
+
+
+      # =====================================================
+      # 7. PUSH BRANCHES - Build and run API smoke in Docker
+      # =====================================================
+
+      - name: Build Docker image for branch API smoke
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }}
+          cache-from: type=gha,scope=selenium-java-tests
+          cache-to: type=gha,mode=max,scope=selenium-java-tests
+
+      - name: Run API smoke suite in Docker
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        run: |
+          mkdir -p api-target api-reports api-screenshots
+
+          docker run --rm \
+            -v "${{ github.workspace }}/api-target:/app/target" \
+            -v "${{ github.workspace }}/api-reports:/app/reports" \
+            -v "${{ github.workspace }}/api-screenshots:/app/src/main/resources/screenShots" \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            mvn test -P Smoke-api
 
 
       # =====================================================
@@ -672,3 +694,13 @@ jobs:
           name: smoke-failure-screenshots
           path: src/main/resources/screenShots
           if-no-files-found: ignore
+
+      - name: Upload API smoke reports
+        if: always() && (github.event_name == 'push' || github.event_name == 'pull_request')
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-api-reports
+          path: |
+            api-target/surefire-reports
+            api-reports
+          if-no-files-found: warn

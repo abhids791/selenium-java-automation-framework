@@ -1,4 +1,4 @@
-package brightlyTestQa.testComponents;
+package brightlyTestQa.ui.testComponents;
 
 import brightlyTestQa.pagesObjects.LandingPage;
 import org.apache.commons.io.FileUtils;
@@ -19,7 +19,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -99,7 +98,7 @@ public class BaseTest {
         return driver;
     }
 
-    public List<HashMap<String, String>> getJsonDatgaToMap(String path) throws IOException {
+    public List<HashMap<String, String>> getJsonDataToMap(String path) throws IOException {
         String jsonContent = FileUtils.readFileToString(new File(path), "UTF-8");
         ObjectMapper objectMapper = new ObjectMapper();
         List<HashMap<String, String>> dataMap = objectMapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {

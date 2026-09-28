@@ -1,4 +1,4 @@
-package brightlyTestQa.testComponents;
+package brightlyTestQa.ui.testComponents;
 
 import brightlyTestQa.utils.Util;
 import com.aventstack.extentreports.ExtentReports;

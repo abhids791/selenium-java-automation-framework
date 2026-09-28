@@ -2,6 +2,11 @@ package brightlyTestQa.utils;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
+import io.restassured.path.json.JsonPath;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Util {
@@ -20,6 +25,16 @@ public class Util {
         extent.attachReporter(reporter);
         extent.setSystemInfo("Tester", "Abhijit Das");
         return extent;
+    }
+
+    public static String readJson(String filePath) throws IOException {
+        return Files.readString(Path.of(filePath));
+    }
+
+
+    public static String getkeyValueFromResponse(String response, String key) {
+        JsonPath js = new JsonPath(response);
+        return js.getString(key);
     }
 
 }
