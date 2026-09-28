@@ -123,14 +123,14 @@ jobs:
       - name: Run API smoke suite in Docker
         if: github.event_name == 'push' || github.event_name == 'pull_request'
         run: |
-          mkdir -p target reports src/main/resources/screenShots
+          mkdir -p api-target api-reports api-screenshots
 
           docker run --rm \
-            -v "${{ github.workspace }}/target:/app/target" \
-            -v "${{ github.workspace }}/reports:/app/reports" \
-            -v "${{ github.workspace }}/src/main/resources/screenShots:/app/src/main/resources/screenShots" \
+            -v "${{ github.workspace }}/api-target:/app/target" \
+            -v "${{ github.workspace }}/api-reports:/app/reports" \
+            -v "${{ github.workspace }}/api-screenshots:/app/src/main/resources/screenShots" \
             ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
-            mvn clean test -P Smoke-api
+            mvn test -P Smoke-api
 
 
       # =====================================================
@@ -703,6 +703,6 @@ jobs:
         with:
           name: smoke-api-reports
           path: |
-            target/surefire-reports
-            reports
+            api-target/surefire-reports
+            api-reports
           if-no-files-found: warn
