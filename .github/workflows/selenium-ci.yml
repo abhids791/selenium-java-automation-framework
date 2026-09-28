@@ -110,6 +110,30 @@ jobs:
 
 
       # =====================================================
+      # 7. PUSH BRANCHES - Build and run API smoke in Docker
+      # =====================================================
+
+      - name: Build Docker image for branch API smoke
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            .
+
+      - name: Run API smoke suite in Docker
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        run: |
+          mkdir -p target reports src/main/resources/screenShots
+
+          docker run --rm \
+            -v "${{ github.workspace }}/target:/app/target" \
+            -v "${{ github.workspace }}/reports:/app/reports" \
+            -v "${{ github.workspace }}/src/main/resources/screenShots:/app/src/main/resources/screenShots" \
+            ghcr.io/${{ github.repository_owner }}/selenium-java-tests:${{ github.sha }} \
+            mvn clean test -P Smoke-api
+
+
+      # =====================================================
       # 7. PR ONLY - Install / Login OpenShift
       # =====================================================
 
@@ -672,3 +696,13 @@ jobs:
           name: smoke-failure-screenshots
           path: src/main/resources/screenShots
           if-no-files-found: ignore
+
+      - name: Upload API smoke reports
+        if: always() && (github.event_name == 'push' || github.event_name == 'pull_request')
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-api-reports
+          path: |
+            target/surefire-reports
+            reports
+          if-no-files-found: warn
